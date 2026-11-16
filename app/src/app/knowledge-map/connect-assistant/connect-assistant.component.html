@@ -1,0 +1,45 @@
+<div class="connect">
+  <p class="connect__intro">
+    Give Claude or ChatGPT a snapshot of what you know, so it builds on it and skips what you've already learned.
+  </p>
+
+  <p class="connect__count">Your snapshot: {{ knownCount }} known, {{ shakyCount }} shaky.</p>
+
+  @if (knownCount === 0 && shakyCount === 0) {
+    <p class="connect__warning">
+      You haven't marked anything yet. Mark what you know on a map first, then copy the link.
+    </p>
+  }
+
+  <mat-form-field appearance="outline" class="connect__field" subscriptSizing="dynamic">
+    <mat-label>Connector link</mat-label>
+    <input matInput type="text" readonly [value]="connectorUrl" (focus)="$any($event.target).select()" />
+  </mat-form-field>
+
+  <button mat-button type="button" class="connect__copy" (click)="onCopy()">
+    {{ isCopied ? 'Copied' : 'Copy link' }}
+  </button>
+
+  <section class="connect__steps">
+    <h3 class="connect__heading">Claude</h3>
+    <ol class="connect__list">
+      <li>Open Settings → Connectors.</li>
+      <li>Choose Add custom connector.</li>
+      <li>Paste the link.</li>
+    </ol>
+  </section>
+
+  <section class="connect__steps">
+    <h3 class="connect__heading">ChatGPT</h3>
+    <ol class="connect__list">
+      <li>Open Settings → Connectors and turn on developer mode.</li>
+      <li>Choose Create.</li>
+      <li>Paste the link as the MCP server URL and set authentication to "None".</li>
+    </ol>
+  </section>
+
+  <p class="connect__note">
+    This link is a snapshot. Copy a fresh one after you learn something new. Anyone with the link can see the list of
+    concepts in it.
+  </p>
+</div>

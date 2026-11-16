@@ -1,115 +1,102 @@
-# Hackathon Starter Kit
+# GapMap
 
-Agent rules, prompts, and templates for building winning hackathon projects fast with Claude Code (or any agent that reads `AGENTS.md`).
+**Know what you know. Learn only what's missing.**
 
-**Built for Angular.** The rules target **Angular 21+ (standalone) · Angular Material · SCSS · Firebase Cloud Functions · Firestore**.
+**Live app: https://gapmap-eight.vercel.app** (no login needed)
 
-> **Using a different framework?** Keep `rules/hackathon.md`, `rules/ai.md`, `rules/git.md`, the agent workflow in `AGENTS.md`, the prompts, and the templates — those are framework-agnostic. Then rewrite or replace `angular.md`, `scss.md`, `ui.md`, and `firebase.md` for your stack (e.g., `react.md`, `tailwind.md`, `supabase.md`), adjust `typescript.md` as needed, and update the rule-file table in `AGENTS.md` to match.
+## The problem
 
-## Use it tonight
+When you set out to learn something, you don't know where to start or where your gaps are. Videos and tutorials are written for an imagined average learner. Some assume prerequisites you never learned. Others spend twenty minutes on material you already know. Nothing keeps track of what *you* know, so every new topic starts from a guess.
 
-1. Click **Use this template** (or copy the files into your project).
-2. Pick your bounty with `brief/pick-a-bounty.md`.
-3. Fill in `brief/brief.md` and the **Project Overview** in `AGENTS.md`.
-4. Follow the prompts in `prompts/` in order.
+## What GapMap does
 
-## Day 0 — before the clock starts
+GapMap keeps a map of what you know, shows the exact gaps between you and a learning goal, and teaches each missing piece by asking questions that start from what you already know.
 
-Everything here costs zero hackathon hours if you do it beforehand.
+- **A map of the goal.** Every goal is drawn as a prerequisite map: foundations at the top, the goal at the bottom.
+- **Your knowledge on the map.** Mark each concept as known, shaky or new. One knowledge profile carries across maps, so "Probability basics" learned for statistics is already green when you open machine learning.
+- **Import from a transcript.** Paste a transcript, course list or CV, or upload a text file. GapMap suggests what you already know, with the evidence for each suggestion, and you confirm before anything changes.
+- **Only the gaps, in order.** The path lists just the concepts you are missing, prerequisites first: "8 lessons · skipping 9 you already know".
+- **A warning before you get lost.** Open a concept too early and GapMap names the prerequisites you are missing and where to start instead.
+- **Lessons as a guided dialogue.** A lesson is three questions, not a lecture. Each question starts from a concept you know, you type your reasoning, and the tutor replies with what is right and a nudge toward the next step. You work the idea out yourself.
+- **An 8-second video version.** The Chain rule lesson has a short video generated with ElevenLabs: three gears and a voiceover showing that rates multiply.
+- **Any topic.** Type a goal and GapMap builds its map.
+- **Your knowledge inside Claude or ChatGPT.** GapMap is also an MCP server. Add your personal connector link to Claude or ChatGPT and the assistant can check what you already know and find your gaps before it explains anything.
 
-- [ ] This kit, with the per-project swaps below done
-- [ ] A hosting account, live and deployable (Firebase Hosting, Vercel)
-- [ ] A database you never think about (Firestore)
-- [ ] An email API key (Resend, Mailgun) — a real email landing beats a mockup
-- [ ] An AI orchestrator with two providers connected (e.g., Conductor with Claude Code + Codex), so you can switch when you hit a limit
-- [ ] Your model API keys, with credits
+## Try it in two minutes
 
-Tokens are a budget. Small sessions with less context burn fewer of them.
+1. Open https://gapmap-eight.vercel.app and click **Try the demo**. It opens the neural network map with a sample learner loaded, and the path reads "8 lessons · skipping 9 you already know".
+2. Play the 8-second video on the landing page or inside the Chain rule concept.
+3. Click **Backpropagation** on the map. GapMap warns that six prerequisites are missing and points to **Chain rule**.
+4. Click **Go to Chain rule**, then **Start lesson**. Answer the first question in your own words and press **Check my thinking**.
+5. Finish the three questions and press **I've got it — mark as learned**. The concept turns green and the next step unlocks.
+6. Click **Import from transcript**, pick a sample transcript and press **Find what I know** to see GapMap propose what a learner knows from their courses.
+7. Click **Connect to Claude or ChatGPT** in the top bar to copy your personal MCP link.
+8. Back on the landing page, leave an email under **Get early access**.
 
-## The workflow
+## Connect it to Claude or ChatGPT
 
-| Step | What | Where |
-|------|------|-------|
-| 1 | Read the rubric, research every brief, pick one | `brief/pick-a-bounty.md`, `prompts/01-research-bounties.md` |
-| 2 | Fill in the brief | `brief/brief.md` |
-| 3 | General plan: phases built to run in parallel, blocking work first | `plans/00-general.md`, `prompts/02-general-plan.md` |
-| 4 | Per phase, in a new session: plan, build, skim, commit, PR | `plans/phase-template.md`, `prompts/03-phase-plan.md`, `prompts/04-parallel-phases.md` |
-| 5 | Last mile: audit, persona reviews, UI polish with the `frontend-design` plugin, mobile, live URL | `prompts/05-audit.md`, `prompts/06-persona-review.md`, `prompts/07-ui-polish.md` |
+The MCP endpoint is `https://gapmap-eight.vercel.app/api/mcp`. The app adds a snapshot of your knowledge to the link, so copy it from **Connect to Claude or ChatGPT** in the top bar.
 
-What it skips on purpose: subagent-driven development, test suites written for coverage, full code reviews, and cosmetic fixes. Polish what the judge sees, not what the judge might read.
+- **Claude:** Settings → Connectors → Add custom connector → paste the link.
+- **ChatGPT:** Settings → Connectors → turn on developer mode → Create → paste the link as the MCP server URL, authentication "None".
 
-> **If you're new to coding,** skim less and read more. Skimming AI output works when you can tell it's wrong. That's the one corner not to cut.
+Tools the assistant gets:
 
-## Why it's split
+| Tool | What it returns |
+|------|-----------------|
+| `get_knowledge_profile` | The concepts you know and the ones you are shaky on |
+| `check_concepts` | For a list of concept names: known, shaky or unknown |
+| `find_gaps` | For a goal: the ordered concepts you still need, the ones you can skip, and the next step |
 
-One giant `AGENTS.md` eats context on every turn. Here `AGENTS.md` is a short index, and the detailed rules live in `rules/`. The agent loads only the files that matter for the task at hand.
+## How it works
 
-```
-.
-├── AGENTS.md              # Index: overview, rule-file table, agent workflow, universal rules
-├── CLAUDE.md              # Points Claude Code at AGENTS.md
-├── .claude/settings.json  # Enables the plugins below for everyone who clones
-├── brief/
-│   ├── pick-a-bounty.md   # Research, data check, skill scoring, red flags
-│   └── brief.md           # Fill in at kickoff: problem, rubric, scope, demo script
-├── plans/
-│   ├── 00-general.md      # Phases, parallelism, blocking work, requirements list
-│   └── phase-template.md  # Copy per phase
-├── prompts/               # Sample prompts for each step, in order
-└── rules/
-    ├── hackathon.md       # HACK — scope, testing stance, demo polish, last mile
-    ├── ai.md              # AI — AI is a component, not the architecture
-    ├── typescript.md      # CMT, TS, PKG, ERR, file organization, shared types
-    ├── angular.md         # ANG, MAT
-    ├── scss.md            # SCSS, theme variables
-    ├── ui.md              # UI — cards, page headers, forms, side panels
-    ├── firebase.md        # FB — Cloud Functions
-    └── git.md             # GIT — commits, PRs
-```
-
-## Per-project swaps
-
-- `AGENTS.md` — Project Overview (a few lines only)
-- `rules/typescript.md` — Firestore namespace (`ProductName.Firestore...`)
-- `rules/ui.md` — global class prefix (`app-`)
-- `rules/scss.md` — theme colors
-- Delete rule files you won't use (e.g., `firebase.md` for a frontend-only build) and remove their rows from the table in `AGENTS.md`.
-
-## Claude Code plugins & skills
-
-`.claude/settings.json` enables these plugins from the official marketplace (`anthropics/claude-plugins-official`), so Claude Code offers to install them when you open the repo. These are the plugins I use on every hackathon build:
-
-| Plugin | What it's for |
-|--------|---------------|
-| `superpowers` | Process skills for the whole build — brainstorming, systematic debugging, parallel agents, verification before claiming done |
-| `frontend-design` | The UI refinement pass — two to three hours after the demo path works, so it doesn't look like a template (`prompts/07-ui-polish.md`) |
-| `code-review` | Quick review pass before merging or pitching |
-
-Install manually if needed:
+The model sits at the edges. Everything in between is code.
 
 ```
-/plugin install superpowers@claude-plugins-official
-/plugin install frontend-design@claude-plugins-official
-/plugin install code-review@claude-plugins-official
+Typed goal ──[model]──▶ concepts + prerequisites ──▶ validated graph
+Transcript ──[model]──▶ suggested known concepts ──▶ learner confirms
+                                                          │
+                              graph + what you know ──▶ gaps and path (code)
+                                                          │
+Path step + what you know ──[model]──▶ three guiding questions
+Your typed answer ──[model]──▶ a reply on your reasoning
 ```
 
-### How the agent should use them (enforced in `AGENTS.md` → `[AGT-##]`)
+- **Gaps and path** are computed in code: a walk over the prerequisite graph and a topological sort. No model decides what you know or what comes next.
+- **Model output is validated** before use: concept ids are normalised, unknown prerequisites dropped, cycles removed. Bad output is retried once, then the app falls back.
+- **Every model path has a fallback.** Three maps are ready-made, two lessons on the demo path are hand-written, and if a reply call fails the lesson shows the stored line of thought instead.
 
-- **Use:** `superpowers:brainstorming` to scope features, `superpowers:systematic-debugging` for bugs, `superpowers:dispatching-parallel-agents` to split independent work across subagents, `superpowers:verification-before-completion` before saying something works.
-- **Don't use:** `superpowers:subagent-driven-development` — it reviews every task with extra agents and takes much longer. Subagents are for parallelism, not ceremony.
-- **Skip:** `superpowers:test-driven-development` — no tests written for coverage during a hackathon (`[HACK-08]`). Tests that already exist stay.
+## Stack
 
-## Stack variants
+- Angular 21 (standalone components) with Angular Material and SCSS, in `app/`
+- Vercel serverless functions in `app/api/`: `map`, `lesson`, `reply`, `transcript`, `mcp`, `signup`
+- Vercel AI Gateway for model calls; no API key in the repo or the browser. Lessons, replies and transcript reading run on Gemini 2.5 Flash and map generation on GPT-4o mini; set `GAPMAP_LESSON_MODEL` and `GAPMAP_MAP_MODEL` to change them
+- ElevenLabs for the lesson video, generated ahead of time and served from `app/public/media/`
+- Supabase for early-access sign-ups: one table that visitors can add to but not read
+- Knowledge is stored in the browser's `localStorage`; there are no accounts
 
-- **Tailwind instead of Material/SCSS**: drop `scss.md` and the `MAT` section, then add your Tailwind conventions as `rules/tailwind.md`.
-- **Signals**: flip `[ANG-03]` in `rules/angular.md` to "Use signals for reactive state (`signal()`, `computed()`, `effect()`)".
+## Limits
 
-## Adding rules
+- **No accounts.** Your knowledge lives in one browser and does not sync between devices.
+- **The MCP link is a snapshot.** It carries the concepts you knew when you copied it; copy a fresh link after you learn more. Anyone with the link can read that list.
+- **Mastery is self-reported.** The transcript import and the tutor suggest; you decide what counts as known.
+- **Transcripts are plain text.** Paste the text of a PDF rather than uploading the file.
+- **Generated maps take about eight seconds** and are simpler than the three ready-made maps.
+- **One video so far.** Only the Chain rule lesson has a video; it was generated ahead of time, not on demand.
+- **Sign-up is a waiting list.** It stores an email; it does not create an account yet.
 
-- Use the `[CATEGORY-##]` format so rules can be referenced in reviews ("violates `[TS-05]`").
-- Put a new category in its own file and add a row to the table in `AGENTS.md` saying when to load it.
-- Keep `AGENTS.md` itself short. If something only applies to some tasks, it belongs in `rules/`.
+## Run it locally
 
-## Say hi
+```bash
+cd app
+npm install
+npx ng serve
+```
 
-Used the kit? Tell me how it went or ask questions on Instagram: [instagram.com/juaninvests](https://instagram.com/juaninvests)
+The AI functions run on Vercel. To run them locally, link the project and use `vercel dev` from `app/`.
+
+## Repo guide
+
+- `brief/brief.md`: the problem, scope and demo script
+- `plans/00-general.md`: build phases and decisions
+- `rules/`: coding conventions the project follows

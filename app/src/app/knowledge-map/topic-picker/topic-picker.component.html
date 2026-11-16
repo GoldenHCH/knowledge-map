@@ -1,0 +1,109 @@
+<div class="topic-picker">
+  <section class="hero">
+    <div class="hero__copy">
+      <h1 class="hero__headline">Know what you know. Learn only what's missing.</h1>
+      <p class="hero__subline">GapMap maps what you already know, shows the exact gaps between you and any goal, and teaches each one by asking questions that start from what you know.</p>
+      <div class="hero__actions">
+        <button mat-flat-button type="button" (click)="tryDemo()">Try the demo</button>
+        <button mat-stroked-button type="button" (click)="scrollToSignup()">Get early access</button>
+      </div>
+    </div>
+
+    <div class="hero__demo">
+      @if (demoVideo.src) {
+        <figure class="demo-video">
+          <video class="demo-video__player" controls playsinline preload="metadata" [src]="demoVideo.src"
+            [attr.poster]="demoVideo.poster || null"></video>
+          <figcaption class="demo-video__caption">The chain rule in 8 seconds: a video lesson generated with ElevenLabs.</figcaption>
+        </figure>
+      } @else {
+        <div class="preview" role="button" tabindex="0" (click)="tryDemo()" (keydown.enter)="tryDemo()">
+          <div class="preview__title">Your path to Training a neural network</div>
+          <div class="preview__meta">8 lessons · skipping 9 you already know</div>
+          <ol class="preview__steps">
+            <li class="preview__step"><span class="preview__number">1</span> Chain rule</li>
+            <li class="preview__step"><span class="preview__number">2</span> Partial derivatives &amp; gradients</li>
+            <li class="preview__step"><span class="preview__number">3</span> Loss functions (Review)</li>
+          </ol>
+          <div class="preview__chips">
+            @for (title of previewKnown; track title) {
+              <span class="preview__chip">{{ title }}</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section__title">How it works</h2>
+    <div class="steps">
+      @for (step of howItWorks; track step.title) {
+        <div class="step-card">
+          <mat-icon class="step-card__icon">{{ step.icon }}</mat-icon>
+          <h3 class="step-card__title">{{ step.title }}</h3>
+          <p class="step-card__text">{{ step.text }}</p>
+        </div>
+      }
+    </div>
+    <p class="section__note">
+      <mat-icon class="section__note-icon">hub</mat-icon>
+      <span>Works inside Claude and ChatGPT too: connect GapMap and your assistant checks what you know before it explains.</span>
+    </p>
+  </section>
+
+  <section class="section">
+  <h2 class="section__title">Pick a goal</h2>
+
+  <div class="topic-picker__grid">
+    @for (map of seededMaps; track map.id) {
+      <mat-card appearance="outlined" class="map-card" role="button" tabindex="0"
+        (click)="selectMap(map)" (keydown.enter)="selectMap(map)">
+        <mat-card-header>
+          <mat-card-title>{{ map.title }}</mat-card-title>
+          <mat-card-subtitle>{{ map.concepts.length }} concepts</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="map-card__description">{{ map.description }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
+    @for (map of generatedMaps$ | async; track map.id) {
+      <mat-card appearance="outlined" class="map-card" role="button" tabindex="0"
+        (click)="selectMap(map)" (keydown.enter)="selectMap(map)">
+        <mat-card-header>
+          <mat-card-title>{{ map.title }}</mat-card-title>
+          <mat-card-subtitle>{{ map.concepts.length }} concepts · generated</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="map-card__description">{{ map.description }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  @if (errorMessage) {
+    <app-alert-banner [message]="errorMessage" (dismissed)="dismissError()"></app-alert-banner>
+  }
+
+  <form class="topic-form" (ngSubmit)="submitTopic()">
+    <mat-form-field appearance="outline" class="topic-form__field">
+      <mat-label>Or type any goal</mat-label>
+      <input matInput name="topic" [(ngModel)]="topic" [disabled]="isBusy" autocomplete="off">
+      <mat-hint>e.g. Understand how transformers work</mat-hint>
+    </mat-form-field>
+    <button mat-flat-button type="submit" class="topic-form__button" [disabled]="!topic.trim() || isBusy">
+      <div class="btn-content">
+        <mat-icon>account_tree</mat-icon>
+        <span>Map it</span>
+      </div>
+    </button>
+  </form>
+</section>
+
+  <section class="section signup" id="early-access">
+    <h2 class="section__title">Get early access</h2>
+    <p class="signup__text">Sign-in and a knowledge profile that follows you across devices are coming. Leave your email and we'll tell you when they're ready.</p>
+    <app-signup-form></app-signup-form>
+  </section>
+</div>

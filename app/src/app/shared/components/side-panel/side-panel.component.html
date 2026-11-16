@@ -1,0 +1,14 @@
+<div class="side-panel-backdrop" [class.side-panel-backdrop--open]="isOpen" (click)="onClose()"></div>
+<aside class="side-panel" [class.side-panel--open]="isOpen" [attr.aria-hidden]="!isOpen">
+  <header class="side-panel__header">
+    <h2 class="side-panel__title">{{ title }}</h2>
+    <button mat-icon-button type="button" aria-label="Close" (click)="onClose()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+  <div class="side-panel__content">
+    @if (isOpen) {
+      <ng-content></ng-content>
+    }
+  </div>
+</aside>

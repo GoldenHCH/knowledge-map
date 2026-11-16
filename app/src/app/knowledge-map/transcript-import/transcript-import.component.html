@@ -1,0 +1,72 @@
+<div class="transcript-import">
+  @if (errorMessage) {
+    <app-alert-banner [message]="errorMessage" (dismissed)="dismissError()"></app-alert-banner>
+  }
+
+  @if (!rows) {
+    <p class="transcript-import__intro">
+      Paste a transcript, course list or CV. We'll suggest what you already know on this map, and you confirm.
+    </p>
+
+    <div class="transcript-import__samples">
+      @for (sample of samples; track sample.id) {
+        <button mat-stroked-button type="button" (click)="useSample(sample)">{{ sample.label }}</button>
+      }
+    </div>
+
+    <mat-form-field appearance="outline" class="transcript-import__field">
+      <mat-label>Transcript, courses or CV</mat-label>
+      <textarea matInput rows="6" [(ngModel)]="text" [disabled]="isLoading"></textarea>
+      <mat-hint>Plain text only for now; paste the text of a PDF.</mat-hint>
+    </mat-form-field>
+
+    <div class="transcript-import__actions">
+      <input #fileInput type="file" class="transcript-import__file" accept=".txt,.md,.csv"
+        (change)="onFileChosen($event)" />
+      <button mat-stroked-button type="button" [disabled]="isLoading" (click)="fileInput.click()">
+        <div class="btn-content">
+          <mat-icon>upload_file</mat-icon>
+          <span>Upload a text file</span>
+        </div>
+      </button>
+      <button mat-flat-button type="button" [disabled]="!canSubmit" (click)="submit()">
+        @if (isLoading) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          Find what I know
+        }
+      </button>
+    </div>
+  } @else {
+    <p class="transcript-import__intro">{{ summary }}</p>
+
+    @if (rows.length) {
+      <ul class="finding-list">
+        @for (row of rows; track row.finding.title) {
+          <li class="finding">
+            <mat-checkbox [(ngModel)]="row.isTicked" class="finding__check"></mat-checkbox>
+            <div class="finding__body">
+              <div class="finding__head">
+                <span class="finding__title">{{ row.finding.title }}</span>
+                <span class="finding__tag" [class.finding__tag--known]="row.finding.level === 'known'"
+                  [class.finding__tag--shaky]="row.finding.level === 'shaky'">{{ levelLabel(row.finding.level) }}</span>
+              </div>
+              <span class="finding__reason">{{ row.finding.reason }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="transcript-import__intro">
+        Nothing on this map shows up in that transcript. You can still mark concepts by hand.
+      </p>
+    }
+
+    <div class="transcript-import__actions">
+      <button mat-button type="button" (click)="back()">Back</button>
+      @if (rows.length) {
+        <button mat-flat-button type="button" [disabled]="!hasTicked" (click)="confirm()">Add to my map</button>
+      }
+    </div>
+  }
+</div>

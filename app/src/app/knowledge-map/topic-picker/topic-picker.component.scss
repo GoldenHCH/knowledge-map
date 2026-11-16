@@ -1,0 +1,272 @@
+.topic-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1040px;
+  margin: 0 auto;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 32px;
+  padding: 16px 0;
+
+  &__headline {
+    margin: 0 0 12px;
+    font-size: 36px;
+    line-height: 1.15;
+    font-weight: 600;
+  }
+
+  &__subline {
+    margin: 0 0 24px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #5f6368;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__demo {
+    min-width: 0;
+  }
+}
+
+.demo-video {
+  margin: 0;
+
+  &__player {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    background: #000;
+  }
+
+  &__caption {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #5f6368;
+  }
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--app-theme--border);
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--app-theme--primary);
+    box-shadow: 0 2px 10px rgba(0, 92, 187, 0.18);
+    outline: none;
+  }
+
+  &__title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  &__meta {
+    font-size: 13px;
+    color: #5f6368;
+  }
+
+  &__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--app-theme--surface);
+    font-size: 14px;
+  }
+
+  &__number {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--app-theme--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__chip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--app-theme--tertiary-bg);
+    color: #14301b;
+    font-size: 12px;
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  &__note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0;
+    font-size: 14px;
+    color: #5f6368;
+  }
+
+  &__note-icon {
+    flex: none;
+    color: var(--app-theme--primary);
+  }
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.step-card {
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--app-theme--border);
+
+  &__icon {
+    color: var(--app-theme--primary);
+  }
+
+  &__title {
+    margin: 8px 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #5f6368;
+  }
+}
+
+.signup {
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--app-theme--border);
+
+  &__text {
+    margin: 0;
+    font-size: 14px;
+    color: #5f6368;
+  }
+}
+
+.map-card {
+  cursor: pointer;
+  border-radius: 12px;
+  background: #fff;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--app-theme--primary);
+    box-shadow: 0 2px 10px rgba(0, 92, 187, 0.18);
+    outline: none;
+  }
+
+  &__description {
+    margin: 8px 0 0;
+    color: #5f6368;
+    font-size: 14px;
+  }
+}
+
+.topic-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+
+  &__field {
+    flex: 1;
+    max-width: 560px;
+    background: #fff;
+  }
+
+  &__button {
+    height: 56px;
+  }
+}
+
+@media (max-width: 599.98px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 20px;
+
+    &__headline {
+      font-size: 28px;
+    }
+  }
+
+  .steps {
+    grid-template-columns: 1fr;
+  }
+
+  .signup {
+    padding: 16px;
+  }
+
+  .topic-form {
+    flex-direction: column;
+    align-items: stretch;
+
+    &__field {
+      max-width: none;
+    }
+  }
+}
