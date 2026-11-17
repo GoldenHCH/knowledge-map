@@ -1,0 +1,141 @@
+<section class="map-view">
+  <header class="map-view__header">
+    <button mat-icon-button type="button" aria-label="Back to goals" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="map-view__title">{{ map.title }}</h1>
+    <div class="map-view__actions">
+      @if (map.sampleLearner) {
+        <button mat-stroked-button type="button" (click)="loadSampleLearner()">
+          <div class="btn-content">
+            <mat-icon>person</mat-icon>
+            <span>Load a sample learner</span>
+          </div>
+        </button>
+      }
+      <button mat-stroked-button type="button" (click)="openImport()">
+        <div class="btn-content">
+          <mat-icon>upload_file</mat-icon>
+          <span>Import from transcript</span>
+        </div>
+      </button>
+      <button mat-stroked-button type="button" (click)="resetMastery()">
+        <div class="btn-content">
+          <mat-icon>restart_alt</mat-icon>
+          <span>Reset</span>
+        </div>
+      </button>
+    </div>
+  </header>
+
+  <div class="map-view__body">
+    <div class="map-view__map-column">
+      @if (!hasAnyKnown) {
+        <p class="map-view__hint">Tap a concept to mark what you already know, import it from a transcript, or load a sample learner.</p>
+      }
+
+      @if (layout) {
+        <div class="map-card">
+          <svg class="map-svg" [attr.viewBox]="'0 0 ' + layout.width + ' ' + layout.height">
+            @for (edge of layout.edges; track edge.fromConceptId + '>' + edge.toConceptId) {
+              <path class="map-edge" [class.map-edge--path]="isEdgeOnPath(edge.fromConceptId, edge.toConceptId)"
+                [attr.d]="edge.svgPath"></path>
+            }
+            @for (node of layout.nodes; track node.concept.id) {
+              <g class="map-node" role="button" tabindex="0"
+                [class.map-node--known]="masteryOf(node.concept) === 'known'"
+                [class.map-node--shaky]="masteryOf(node.concept) === 'shaky'"
+                [class.map-node--path]="isOnPath(node.concept.id)"
+                [class.map-node--goal]="node.concept.id === goalConceptId"
+                [attr.aria-label]="node.concept.title"
+                (click)="selectConcept(node.concept)"
+                (keydown.enter)="selectConcept(node.concept)">
+                @if (isNextStep(node.concept.id)) {
+                  <rect class="map-node__ring" rx="16" [attr.x]="node.x - 4" [attr.y]="node.y - 4"
+                    [attr.width]="layout.nodeWidth + 8" [attr.height]="layout.nodeHeight + 8"></rect>
+                }
+                <rect class="map-node__box" rx="12" [attr.x]="node.x" [attr.y]="node.y"
+                  [attr.width]="layout.nodeWidth" [attr.height]="layout.nodeHeight"></rect>
+                @for (line of node.titleLines; track $index) {
+                  <text class="map-node__label" text-anchor="middle" dominant-baseline="middle"
+                    [attr.x]="node.x + layout.nodeWidth / 2" [attr.y]="titleLineY(node, $index)">{{ line }}</text>
+                }
+                @if (masteryOf(node.concept) === 'known') {
+                  <text class="map-node__check" [attr.x]="node.x + layout.nodeWidth - 14" [attr.y]="node.y + 14"
+                    text-anchor="middle" dominant-baseline="middle">✓</text>
+                }
+                @if (node.concept.id === goalConceptId) {
+                  <text class="map-node__flag" [attr.x]="node.x + 12" [attr.y]="node.y + 12"
+                    text-anchor="middle" dominant-baseline="middle">⚑</text>
+                }
+              </g>
+            }
+          </svg>
+        </div>
+      }
+
+      <div class="legend">
+        <span class="legend__item"><span class="legend__swatch legend__swatch--known"></span>Known</span>
+        <span class="legend__item"><span class="legend__swatch legend__swatch--shaky"></span>Shaky</span>
+        <span class="legend__item"><span class="legend__swatch legend__swatch--new"></span>New</span>
+        <span class="legend__item"><span class="legend__swatch legend__swatch--path"></span>On your path</span>
+      </div>
+    </div>
+
+    <aside class="map-view__path-column">
+      @if (learningPath) {
+        <mat-card appearance="outlined" class="path-card">
+          <h2 class="path-card__title">Your path to {{ goalTitle }}</h2>
+
+          @if (learningPath.steps.length) {
+            <p class="path-card__summary">{{ pathSummary }}</p>
+            <ol class="path-list">
+              @for (step of learningPath.steps; track step.id; let i = $index) {
+                <li class="path-row" [class.path-row--locked]="isLocked(step)" [class.path-row--next]="isNextStep(step.id)"
+                  role="button" tabindex="0" (click)="selectConcept(step)" (keydown.enter)="selectConcept(step)">
+                  <span class="path-row__number">{{ i + 1 }}</span>
+                  <span class="path-row__title">{{ step.title }}</span>
+                  @if (masteryOf(step) === 'shaky') {
+                    <span class="path-row__tag">Review</span>
+                  }
+                  @if (isLocked(step)) {
+                    <mat-icon class="path-row__lock">lock</mat-icon>
+                  }
+                  @if (isNextStep(step.id)) {
+                    <button mat-flat-button type="button" class="path-row__start"
+                      (click)="$event.stopPropagation(); selectConcept(step)">Start lesson</button>
+                  }
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="path-card__empty">You already know everything on the way to {{ goalTitle }}. Pick a bigger goal.</p>
+          }
+
+          @if (learningPath.skipped.length) {
+            <h3 class="path-card__skipping">Skipping</h3>
+            <div class="chip-row">
+              @for (skipped of learningPath.skipped; track skipped.id) {
+                <span class="chip">{{ skipped.title }}</span>
+              }
+            </div>
+          }
+        </mat-card>
+      }
+    </aside>
+  </div>
+
+  <app-side-panel [isOpen]="!!selectedConcept" [title]="selectedConcept?.title ?? ''" (closed)="closePanel()">
+    @if (selectedConcept) {
+      <app-concept-panel [map]="map" [concept]="selectedConcept" [goalConceptId]="goalConceptId"
+        (conceptRequested)="onConceptRequested($event)" (goalChosen)="onGoalChosen($event)"
+        (closed)="closePanel()"></app-concept-panel>
+    }
+  </app-side-panel>
+
+  <app-side-panel [isOpen]="isImportOpen" title="Import what you know" (closed)="closeImport()">
+    @if (isImportOpen) {
+      <app-transcript-import [map]="map" (closed)="closeImport()"></app-transcript-import>
+    }
+  </app-side-panel>
+</section>

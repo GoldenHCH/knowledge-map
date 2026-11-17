@@ -1,0 +1,33 @@
+<header class="app-bar">
+  <span class="app-bar__name">GapMap</span>
+  <span class="app-bar__tagline">Know what you know. Learn only what's missing.</span>
+  <button
+    mat-stroked-button
+    type="button"
+    class="app-bar__connect"
+    aria-label="Connect to Claude or ChatGPT"
+    (click)="onConnectToggled(true)"
+  >
+    <mat-icon>hub</mat-icon>
+    <span class="app-bar__connect-label">Connect to Claude or ChatGPT</span>
+  </button>
+</header>
+
+@if (isLoading$ | async) {
+  <div class="app-loading">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    <p class="app-loading__message">{{ loadingMessage$ | async }}</p>
+  </div>
+}
+
+<main class="app-main">
+  @if (selectedMap) {
+    <app-map-view [map]="selectedMap" (backRequested)="onBackRequested()"></app-map-view>
+  } @else {
+    <app-topic-picker (mapSelected)="onMapSelected($event)"></app-topic-picker>
+  }
+</main>
+
+<app-side-panel title="Connect your assistant" [isOpen]="isConnectPanelOpen" (closed)="onConnectToggled(false)">
+  <app-connect-assistant></app-connect-assistant>
+</app-side-panel>

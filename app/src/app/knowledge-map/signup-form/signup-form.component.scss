@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+.signup-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+
+  &__field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__button {
+    height: 56px;
+    min-width: 160px;
+  }
+}
+
+.signup-done {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--app-theme--tertiary-bg);
+  color: #14301b;
+
+  &__icon {
+    flex: none;
+    color: var(--app-theme--tertiary);
+  }
+}
+
+@media (max-width: 599.98px) {
+  .signup-form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+}

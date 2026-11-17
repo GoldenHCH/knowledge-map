@@ -1,0 +1,110 @@
+.tutor-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+
+  &__messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  &__empty {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  &__bubble {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+
+    &--tutor {
+      align-self: flex-start;
+      background: var(--app-theme--surface);
+      border: 1px solid var(--app-theme--border);
+    }
+
+    &--learner {
+      align-self: flex-end;
+      background: color-mix(in srgb, var(--app-theme--primary) 12%, white);
+      color: #1b1b1f;
+    }
+  }
+
+  &__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 6px;
+    font-size: 11px;
+    color: var(--app-theme--tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--app-theme--tertiary);
+    animation: tutor-chat-pulse 1s ease-in-out infinite;
+  }
+
+  &__starters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__chip {
+    padding: 6px 12px;
+    border: 1px solid var(--app-theme--border);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--app-theme--primary);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: var(--app-theme--surface);
+    }
+  }
+
+  &__composer {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  &__field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__send {
+    margin-top: 4px;
+    color: var(--app-theme--primary);
+  }
+}
+
+@keyframes tutor-chat-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

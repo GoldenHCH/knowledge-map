@@ -1,0 +1,56 @@
+<section class="tutor-chat" aria-label="Tutor chat">
+  <div #messageList class="tutor-chat__messages" aria-live="polite">
+    @if (messages.length === 0) {
+      <p class="tutor-chat__empty">
+        Ask anything about {{ conceptTitle }}. The tutor knows what you already know.
+      </p>
+    }
+    @for (message of messages; track $index; let isLast = $last) {
+      <div
+        class="tutor-chat__bubble"
+        [class.tutor-chat__bubble--learner]="message.role === 'learner'"
+        [class.tutor-chat__bubble--tutor]="message.role === 'tutor'"
+      >
+        @if (message.role === 'tutor' && isLast && isStreaming) {
+          <span class="tutor-chat__live"><span class="tutor-chat__live-dot"></span>live</span>
+        }
+        {{ message.text }}
+      </div>
+    }
+  </div>
+
+  @if (messages.length === 0) {
+    <div class="tutor-chat__starters">
+      @for (starter of starters; track starter) {
+        <button type="button" class="tutor-chat__chip" (click)="onStarter(starter)">{{ starter }}</button>
+      }
+    </div>
+  }
+
+  @if (errorMessage) {
+    <app-alert-banner [message]="errorMessage" (dismissed)="onDismissError()"></app-alert-banner>
+  }
+
+  <div class="tutor-chat__composer">
+    <mat-form-field appearance="outline" class="tutor-chat__field" subscriptSizing="dynamic">
+      <mat-label>Ask the tutor</mat-label>
+      <textarea
+        matInput
+        rows="2"
+        maxlength="1200"
+        [(ngModel)]="draft"
+        (keydown)="onKeydown($event)"
+      ></textarea>
+    </mat-form-field>
+    <button
+      mat-icon-button
+      type="button"
+      class="tutor-chat__send"
+      aria-label="Send message"
+      [disabled]="!canSend"
+      (click)="onSendClick()"
+    >
+      <mat-icon>send</mat-icon>
+    </button>
+  </div>
+</section>

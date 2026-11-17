@@ -1,0 +1,245 @@
+<div class="concept-panel">
+  @if (errorMessage) {
+    <app-alert-banner [message]="errorMessage" (dismissed)="onDismissError()"></app-alert-banner>
+  }
+
+  @if (!isLessonActive) {
+    <p class="concept-panel__summary">{{ concept.summary }}</p>
+
+    <div class="concept-panel__section">
+      <div class="concept-panel__label">How well do you know this?</div>
+      <div class="mastery-choice">
+        @for (choice of masteryChoices; track choice.level) {
+          <button
+            type="button"
+            class="mastery-choice__option"
+            [class.mastery-choice__option--selected]="currentLevel === choice.level"
+            [attr.aria-pressed]="currentLevel === choice.level"
+            (click)="onChooseMastery(choice.level)"
+          >
+            {{ choice.label }}
+          </button>
+        }
+      </div>
+      @if (prerequisitesMarkedNote) {
+        <p class="concept-panel__note">Its prerequisites were marked known too.</p>
+      }
+    </div>
+
+    <div class="concept-panel__section">
+      <div class="concept-panel__label">Builds on</div>
+      @if (prerequisiteRows.length === 0) {
+        <p class="concept-panel__note">Nothing. This is a starting point.</p>
+      } @else {
+        <div class="prerequisite-list">
+          @for (row of prerequisiteRows; track row.concept.id) {
+            <button type="button" class="prerequisite-row" (click)="onOpenConcept(row.concept)">
+              <span class="status-dot" [ngClass]="'status-dot--' + row.level"></span>
+              <span class="prerequisite-row__title">{{ row.concept.title }}</span>
+              <mat-icon class="prerequisite-row__chevron">chevron_right</mat-icon>
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (lessonVideo; as video) {
+      <div class="video-card">
+        <div class="concept-panel__label">Watch the 8-second version</div>
+        <video class="video-card__player" controls playsinline preload="metadata" [src]="video.src"
+          [attr.poster]="video.poster || null"></video>
+        <p class="video-card__caption">{{ video.caption }}</p>
+      </div>
+    }
+
+    @if (missingPrerequisites.length > 0) {
+      <div class="warning-box">
+        <p class="warning-box__text">{{ warningText }}</p>
+        <div class="warning-box__actions">
+          <button mat-flat-button type="button" (click)="onOpenConcept(missingPrerequisites[0])">
+            Go to {{ missingPrerequisites[0].title }}
+          </button>
+          <button mat-button type="button" (click)="onStartLesson()">Teach me anyway</button>
+        </div>
+      </div>
+    } @else {
+      <button mat-flat-button color="primary" type="button" class="concept-panel__primary" (click)="onStartLesson()">
+        <div class="btn-content">
+          <mat-icon>school</mat-icon>
+          <span>Start lesson</span>
+        </div>
+      </button>
+    }
+
+    @if (!isGoal) {
+      <button mat-stroked-button type="button" class="concept-panel__secondary" (click)="onChooseGoal()">
+        Make this my goal
+      </button>
+    }
+  } @else if (isLessonStarting) {
+    <div class="lesson-loading">
+      <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
+      <p>Writing a lesson around what you already know…</p>
+    </div>
+  } @else if (lesson) {
+    @if (builtOnTitles.length > 0) {
+      <p class="concept-panel__note">Built on what you know: {{ builtOnTitles.join(', ') }}</p>
+    }
+    <p class="concept-panel__opening">{{ lesson.opening }}</p>
+
+    @if (!isLessonFinished) {
+      <div class="progress">
+        <div class="progress__steps">
+          @for (step of progressSteps; track step) {
+            <span
+              class="progress__step"
+              [class.progress__step--done]="step < questionIndex"
+              [class.progress__step--current]="step === questionIndex"
+            ></span>
+          }
+        </div>
+        <div class="concept-panel__label">Question {{ questionIndex + 1 }} of {{ questionCount }}</div>
+      </div>
+
+      @if (currentQuestion; as question) {
+        <div class="question-card">
+          <span class="question-card__tag">Starts from: {{ question.buildsOnTitle }}</span>
+
+          @if (question.kind === 'choice') {
+            <p class="question-card__prompt">{{ question.prompt }}</p>
+            <div class="option-list">
+              @for (option of options; track $index) {
+                <div class="option">
+                  <button
+                    type="button"
+                    class="option__row"
+                    [class.option__row--wrong]="choiceState(option) === 'wrong'"
+                    [class.option__row--correct]="choiceState(option) === 'correct'"
+                    [disabled]="choiceState(option) !== 'idle'"
+                    (click)="onPickChoice(option)"
+                  >
+                    <span class="option__text">{{ option.text }}</span>
+                    @if (choiceState(option) === 'correct') {
+                      <mat-icon class="option__icon">check_circle</mat-icon>
+                    }
+                  </button>
+                  @if (triedChoices.includes(option)) {
+                    <p
+                      class="option__feedback"
+                      [class.option__feedback--wrong]="!option.isCorrect"
+                      [class.option__feedback--correct]="option.isCorrect"
+                    >
+                      {{ option.feedback }}
+                    </p>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <form class="blank-line" (submit)="$event.preventDefault(); onCheckBlank()">
+              <span class="blank-line__text">{{ blankParts[0] }}</span>
+              <input
+                class="blank-line__input"
+                name="blank"
+                type="text"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                maxlength="40"
+                aria-label="Your answer"
+                [class.blank-line__input--shake]="isBlankShaking"
+                [class.blank-line__input--wrong]="blankMisses > 0 && !isQuestionDone"
+                [class.blank-line__input--correct]="isBlankSolved"
+                [readOnly]="isQuestionDone"
+                [(ngModel)]="blankText"
+              />
+              <span class="blank-line__text">{{ blankParts[1] }}</span>
+            </form>
+            @if (!isQuestionDone) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                class="concept-panel__primary"
+                [disabled]="!canCheckBlank"
+                (click)="onCheckBlank()"
+              >
+                Check
+              </button>
+            }
+            @if (blankFeedbackVisible) {
+              <p class="option__feedback option__feedback--wrong">Not quite.</p>
+            }
+            @if (isQuestionDone && isAnswerRevealed) {
+              <p class="option__feedback">The answer is {{ acceptedAnswerText }}.</p>
+            }
+            @if (isBlankSolved) {
+              <p class="option__feedback option__feedback--correct">
+                <mat-icon class="option__inline-icon">check_circle</mat-icon> Correct.
+              </p>
+            }
+          }
+
+          @if (isHintShown && !isQuestionDone) {
+            <div class="hint-box">
+              <span class="question-card__tag">Hint</span>
+              <span>{{ question.hint }}</span>
+            </div>
+          }
+
+          @if (isQuestionDone) {
+            <div class="why-box">
+              <span class="question-card__tag">Why</span>
+              <span>{{ question.reasoning }}</span>
+            </div>
+            <button mat-flat-button color="primary" type="button" class="concept-panel__primary" (click)="onNextQuestion()">
+              {{ isLastQuestion ? 'See what you worked out' : 'Next question' }}
+            </button>
+          } @else {
+            <div class="lesson-actions">
+              <button mat-button type="button" [disabled]="isHintShown" (click)="onShowHint()">Hint</button>
+              <button mat-button type="button" (click)="onShowMe()">Show me</button>
+            </div>
+          }
+        </div>
+      }
+    } @else {
+      <div class="takeaway-box">
+        <div class="concept-panel__label">What you just worked out</div>
+        <p class="takeaway-box__text">{{ lesson.takeaway }}</p>
+        <p class="takeaway-box__score">{{ scoreText }}</p>
+      </div>
+      @if (lessonVideo; as video) {
+        <div class="video-card">
+          <div class="concept-panel__label">Watch the 8-second version</div>
+          <video class="video-card__player" controls playsinline preload="metadata" [src]="video.src"
+            [attr.poster]="video.poster || null"></video>
+          <p class="video-card__caption">{{ video.caption }}</p>
+        </div>
+      }
+      <button mat-flat-button color="primary" type="button" class="concept-panel__primary" (click)="onMarkLearned()">
+        I've got it — mark as learned
+      </button>
+      <button mat-button type="button" class="concept-panel__secondary" (click)="onStillShaky()">Still shaky</button>
+    }
+
+    <div class="chat-section">
+      <button mat-stroked-button type="button" class="concept-panel__secondary" (click)="onToggleChat()">
+        <div class="btn-content">
+          <mat-icon>forum</mat-icon>
+          <span>Stuck? Talk it through live</span>
+        </div>
+      </button>
+      @if (isChatOpen) {
+        <app-tutor-chat
+          [conceptTitle]="concept.title"
+          [conceptSummary]="concept.summary"
+          [goalTitle]="goalTitle"
+          [knownTitles]="knownTitles"
+          [shakyTitles]="shakyTitles"
+          [contextNote]="chatContextNote"
+        ></app-tutor-chat>
+      }
+    </div>
+  }
+</div>
