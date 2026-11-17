@@ -7,7 +7,13 @@
 
 ## The problem
 
-When I want to learn something, I don't know where to start or where my gaps are. Every video and tutorial is written for an imagined average learner. Some assume prerequisites I never learned, and I get lost ten minutes in. Others spend twenty minutes on material I already know. Nothing keeps track of what *I* know, so every new topic starts from a guess.
+Everyone who sets out to learn something hits the same wall: they don't know where to start, and they can't see their own gaps. A student moving from algebra to calculus, a nurse learning statistics for a research role, a developer picking up machine learning, a retiree learning to read sheet music: each arrives with a different mix of what they already know, and none of them can tell which missing piece is the one holding them back. You can't look up a prerequisite you don't know exists.
+
+Teaching material makes this worse, because it is written once, for an imagined average learner. A video, a textbook chapter or a course has to assume a starting point, and that starting point is wrong for almost everyone who uses it. For some learners it assumes prerequisites they never learned. They are lost ten minutes in, and many conclude "I'm just not a maths person" when the real cause was one missing idea. For others it re-teaches what they already know, and they skim, tune out or quit.
+
+AI assistants can explain anything on demand, but they have the same blind spot: they start from zero in every conversation, because nothing keeps a record of what this particular learner knows. So people spend their learning time on the wrong things, either re-covering what they already have or struggling past gaps they cannot name.
+
+The missing piece is the same in every subject and for every learner: a record of what you know, compared against what the goal requires.
 
 ## What I built
 
