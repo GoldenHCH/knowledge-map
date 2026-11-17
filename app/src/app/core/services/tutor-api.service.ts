@@ -2,11 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
-  IAnswerReply,
   IKnowledgeMap,
   ILesson,
   ILessonRequest,
-  IReplyRequest,
   ITranscriptFinding,
   ITranscriptRequest,
 } from '../../knowledge-map/knowledge-map.interfaces';
@@ -21,10 +19,6 @@ export class TutorApiService {
 
   public async generateLesson(request: ILessonRequest): Promise<ILesson> {
     return this._post<ILesson>('/api/lesson', request, 'We could not write that lesson right now.');
-  }
-
-  public async replyToAnswer(request: IReplyRequest): Promise<IAnswerReply> {
-    return this._post<IAnswerReply>('/api/reply', request, 'We could not read your answer right now.');
   }
 
   public async readTranscript(request: ITranscriptRequest): Promise<ITranscriptFinding[]> {

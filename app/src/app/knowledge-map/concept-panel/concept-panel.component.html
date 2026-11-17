@@ -87,68 +87,127 @@
     }
     <p class="concept-panel__opening">{{ lesson.opening }}</p>
 
-    <div class="concept-panel__label">Question {{ questionIndex + 1 }} of {{ questionCount }}</div>
-
-    <div class="dialogue">
-      @for (turn of turns; track $index) {
-        <div class="bubble" [ngClass]="'bubble--' + turn.role">
-          @if (turn.tag) {
-            <span class="bubble__tag">{{ turn.tag }}</span>
-          }
-          @if (turn.label) {
-            <span class="bubble__tag">{{ turn.label }}</span>
-          }
-          <span class="bubble__text">{{ turn.text }}</span>
-        </div>
-      }
-    </div>
-
     @if (!isLessonFinished) {
-      @if (isHintShown && currentQuestion) {
-        <div class="bubble bubble--hint">
-          <span class="bubble__tag">Hint</span>
-          <span class="bubble__text">{{ currentQuestion.hint }}</span>
+      <div class="progress">
+        <div class="progress__steps">
+          @for (step of progressSteps; track step) {
+            <span
+              class="progress__step"
+              [class.progress__step--done]="step < questionIndex"
+              [class.progress__step--current]="step === questionIndex"
+            ></span>
+          }
         </div>
-      }
+        <div class="concept-panel__label">Question {{ questionIndex + 1 }} of {{ questionCount }}</div>
+      </div>
 
-      @if (isReasoningShown && currentQuestion && !isSending && !hasFallbackReply) {
-        <div class="bubble bubble--reasoning">
-          <span class="bubble__tag">The line of thought</span>
-          <span class="bubble__text">{{ currentQuestion.reasoning }}</span>
-        </div>
-      }
+      @if (currentQuestion; as question) {
+        <div class="question-card">
+          <span class="question-card__tag">Starts from: {{ question.buildsOnTitle }}</span>
 
-      @if (isQuestionDone) {
-        <button mat-flat-button color="primary" type="button" class="concept-panel__primary" (click)="onNextQuestion()">
-          {{ isLastQuestion ? 'See what you worked out' : 'Next question' }}
-        </button>
-      } @else {
-        <mat-form-field appearance="outline" class="answer-field">
-          <textarea
-            matInput
-            rows="3"
-            maxlength="800"
-            placeholder="Reason it out in your own words…"
-            [(ngModel)]="answerText"
-            [disabled]="isSending"
-          ></textarea>
-        </mat-form-field>
-        <div class="lesson-actions">
-          <button mat-flat-button color="primary" type="button" [disabled]="!canSend" (click)="onCheckThinking()">
-            @if (isSending) {
-              <mat-progress-spinner mode="indeterminate" diameter="20"></mat-progress-spinner>
-            } @else {
-              Check my thinking
+          @if (question.kind === 'choice') {
+            <p class="question-card__prompt">{{ question.prompt }}</p>
+            <div class="option-list">
+              @for (option of options; track $index) {
+                <div class="option">
+                  <button
+                    type="button"
+                    class="option__row"
+                    [class.option__row--wrong]="choiceState(option) === 'wrong'"
+                    [class.option__row--correct]="choiceState(option) === 'correct'"
+                    [disabled]="choiceState(option) !== 'idle'"
+                    (click)="onPickChoice(option)"
+                  >
+                    <span class="option__text">{{ option.text }}</span>
+                    @if (choiceState(option) === 'correct') {
+                      <mat-icon class="option__icon">check_circle</mat-icon>
+                    }
+                  </button>
+                  @if (triedChoices.includes(option)) {
+                    <p
+                      class="option__feedback"
+                      [class.option__feedback--wrong]="!option.isCorrect"
+                      [class.option__feedback--correct]="option.isCorrect"
+                    >
+                      {{ option.feedback }}
+                    </p>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <form class="blank-line" (submit)="$event.preventDefault(); onCheckBlank()">
+              <span class="blank-line__text">{{ blankParts[0] }}</span>
+              <input
+                class="blank-line__input"
+                name="blank"
+                type="text"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                maxlength="40"
+                aria-label="Your answer"
+                [class.blank-line__input--shake]="isBlankShaking"
+                [class.blank-line__input--wrong]="blankMisses > 0 && !isQuestionDone"
+                [class.blank-line__input--correct]="isBlankSolved"
+                [readOnly]="isQuestionDone"
+                [(ngModel)]="blankText"
+              />
+              <span class="blank-line__text">{{ blankParts[1] }}</span>
+            </form>
+            @if (!isQuestionDone) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                class="concept-panel__primary"
+                [disabled]="!canCheckBlank"
+                (click)="onCheckBlank()"
+              >
+                Check
+              </button>
             }
-          </button>
-          <button mat-button type="button" [disabled]="isHintShown" (click)="onToggleHint()">Hint</button>
-          <button mat-button type="button" (click)="onShowReasoning()">Show the reasoning</button>
+            @if (blankFeedbackVisible) {
+              <p class="option__feedback option__feedback--wrong">Not quite.</p>
+            }
+            @if (isQuestionDone && isAnswerRevealed) {
+              <p class="option__feedback">The answer is {{ acceptedAnswerText }}.</p>
+            }
+            @if (isBlankSolved) {
+              <p class="option__feedback option__feedback--correct">
+                <mat-icon class="option__inline-icon">check_circle</mat-icon> Correct.
+              </p>
+            }
+          }
+
+          @if (isHintShown && !isQuestionDone) {
+            <div class="hint-box">
+              <span class="question-card__tag">Hint</span>
+              <span>{{ question.hint }}</span>
+            </div>
+          }
+
+          @if (isQuestionDone) {
+            <div class="why-box">
+              <span class="question-card__tag">Why</span>
+              <span>{{ question.reasoning }}</span>
+            </div>
+            <button mat-flat-button color="primary" type="button" class="concept-panel__primary" (click)="onNextQuestion()">
+              {{ isLastQuestion ? 'See what you worked out' : 'Next question' }}
+            </button>
+          } @else {
+            <div class="lesson-actions">
+              <button mat-button type="button" [disabled]="isHintShown" (click)="onShowHint()">Hint</button>
+              <button mat-button type="button" (click)="onShowMe()">Show me</button>
+            </div>
+          }
         </div>
       }
     } @else {
       <div class="takeaway-box">
         <div class="concept-panel__label">What you just worked out</div>
         <p class="takeaway-box__text">{{ lesson.takeaway }}</p>
+        <p class="takeaway-box__score">{{ scoreText }}</p>
       </div>
       @if (lessonVideo; as video) {
         <div class="video-card">
@@ -163,5 +222,24 @@
       </button>
       <button mat-button type="button" class="concept-panel__secondary" (click)="onStillShaky()">Still shaky</button>
     }
+
+    <div class="chat-section">
+      <button mat-stroked-button type="button" class="concept-panel__secondary" (click)="onToggleChat()">
+        <div class="btn-content">
+          <mat-icon>forum</mat-icon>
+          <span>Stuck? Talk it through live</span>
+        </div>
+      </button>
+      @if (isChatOpen) {
+        <app-tutor-chat
+          [conceptTitle]="concept.title"
+          [conceptSummary]="concept.summary"
+          [goalTitle]="goalTitle"
+          [knownTitles]="knownTitles"
+          [shakyTitles]="shakyTitles"
+          [contextNote]="chatContextNote"
+        ></app-tutor-chat>
+      }
+    </div>
   }
 </div>

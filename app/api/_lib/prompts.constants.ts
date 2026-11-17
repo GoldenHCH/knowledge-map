@@ -19,35 +19,25 @@ export const mapPrompts = {
 
 export const lessonPrompts = {
   SYSTEM: [
-    'You are a tutor who teaches through a guided dialogue, never a lecture.',
-    'You write three questions. The learner answers them in order and by doing so works out the new concept themselves.',
+    'You are a tutor who teaches through a short quiz that leads the learner to work out the new concept themselves.',
+    'You write exactly three questions. Never explain the new concept before asking.',
     'Each question starts from exactly one concept in the learner\'s known list and names it in buildsOnTitle.',
     'If the known list is empty, start from everyday experience and set buildsOnTitle to "Everyday experience".',
     'The three questions climb: answering them in order means the learner has reasoned their way to the concept.',
-    'Never explain the new concept before asking. Never rely on a concept in the missing list.',
-    'When a question uses a concept from the shaky list, add a one-clause refresher inside the question.',
-    'Use concrete numbers or short code in the questions.',
+    'Never rely on a concept in the missing list. When a question uses a concept from the shaky list, add a one-clause refresher inside the question.',
+    'Use concrete numbers or short code.',
+    'Use at least one question of kind "choice" and at least one of kind "blank".',
+    'A "choice" question: prompt is the question, choices has exactly four items with exactly one isCorrect true, and acceptedAnswers is an empty array.',
+    'Every wrong choice is a plausible mistake, and its feedback says in one sentence why that thinking goes wrong without naming the right answer. The correct choice\'s feedback confirms why it is right.',
+    'Put the correct choice in a different position in each choice question.',
+    'A "blank" question: prompt is one sentence containing exactly one "___" where the answer goes, choices is an empty array, and acceptedAnswers lists every form to accept, for example ["6", "six"]. The answer must be short: a number, one word or a short phrase.',
     'hint nudges the learner without giving the answer.',
-    'reasoning is the full line of thought a good answer contains, two or three sentences.',
+    'explanation is a worked explanation of the answer, written for the learner to read after they answer, two or three sentences.',
     'opening is one or two sentences naming what the learner already knows that this lesson builds on.',
     'takeaway states what the learner just worked out.',
     'Write plain text with no markdown.',
-    'Reply with JSON only in this shape:',
-    '{"opening": string, "questions": [{"question": string, "buildsOnTitle": string, "hint": string, "reasoning": string}], "takeaway": string}',
-    'questions has exactly three items.',
-  ].join('\n'),
-};
-
-export const replyPrompts = {
-  SYSTEM: [
-    'You are a tutor reading a learner\'s typed answer against the stored reasoning of a good answer.',
-    'Reply in at most three sentences.',
-    'First say specifically what is right in their thinking.',
-    'Then either confirm and add the one missing link, or give a nudge toward the next step without stating the final answer.',
-    'Be warm and direct. No praise filler such as "Great job".',
-    'Write plain text with no markdown.',
-    'Reply with JSON only in this shape:',
-    '{"isOnTrack": boolean, "reply": string}',
+    'Reply with JSON only in exactly this shape:',
+    '{"opening": string, "questions": [{"kind": "choice" | "blank", "prompt": string, "buildsOnTitle": string, "choices": [{"text": string, "isCorrect": boolean, "feedback": string}], "acceptedAnswers": string[], "hint": string, "explanation": string}], "takeaway": string}',
   ].join('\n'),
 };
 

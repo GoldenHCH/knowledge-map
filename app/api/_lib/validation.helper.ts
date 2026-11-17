@@ -14,9 +14,18 @@ export interface IApiKnowledgeMap {
   isGenerated: boolean;
 }
 
+export interface IApiLessonChoice {
+  text: string;
+  isCorrect: boolean;
+  feedback: string;
+}
+
 export interface IApiLessonQuestion {
-  question: string;
+  kind: 'choice' | 'blank';
+  prompt: string;
   buildsOnTitle: string;
+  choices: IApiLessonChoice[];
+  acceptedAnswers: string[];
   hint: string;
   reasoning: string;
 }
@@ -27,11 +36,6 @@ export interface IApiLesson {
   questions: IApiLessonQuestion[];
   takeaway: string;
   isGenerated: boolean;
-}
-
-export interface IApiAnswerReply {
-  isOnTrack: boolean;
-  reply: string;
 }
 
 export interface IApiTranscriptFinding {
@@ -187,20 +191,19 @@ export class ValidationHelper {
     const questions: IApiLessonQuestion[] = [];
 
     for (const raw of value['questions'] as unknown[]) {
-      if (!ValidationHelper.isRecord(raw)) {
+      const question: IApiLessonQuestion | null = ValidationHelper._parseLessonQuestion(raw);
+
+      if (question === null) {
         return null;
       }
 
-      const question: string | null = ValidationHelper.text(raw['question'], 1000);
-      const buildsOnTitle: string | null = ValidationHelper.text(raw['buildsOnTitle'], 100);
-      const hint: string | null = ValidationHelper.text(raw['hint'], 1000);
-      const reasoning: string | null = ValidationHelper.text(raw['reasoning'], 1500);
+      questions.push(question);
+    }
 
-      if (question === null || buildsOnTitle === null || hint === null || reasoning === null) {
-        return null;
-      }
+    const kinds: Set<string> = new Set<string>(questions.map((question: IApiLessonQuestion) => question.kind));
 
-      questions.push({ question, buildsOnTitle, hint, reasoning });
+    if (!kinds.has('choice') || !kinds.has('blank')) {
+      return null;
     }
 
     return { conceptTitle, opening, questions, takeaway, isGenerated: true };
@@ -270,18 +273,77 @@ export class ValidationHelper {
     return findings;
   }
 
-  public static validateReply(value: unknown): IApiAnswerReply | null {
-    if (!ValidationHelper.isRecord(value)) {
+  private static _parseLessonQuestion(raw: unknown): IApiLessonQuestion | null {
+    if (!ValidationHelper.isRecord(raw) || (raw['kind'] !== 'choice' && raw['kind'] !== 'blank')) {
       return null;
     }
 
-    const reply: string | null = ValidationHelper.text(value['reply'], 1500);
+    const kind: 'choice' | 'blank' = raw['kind'];
+    const prompt: string | null = ValidationHelper.text(raw['prompt'], 1000);
+    const buildsOnTitle: string | null = ValidationHelper.text(raw['buildsOnTitle'], 100);
+    const hint: string | null = ValidationHelper.text(raw['hint'], 1000);
+    const reasoning: string | null = ValidationHelper.text(raw['explanation'] ?? raw['reasoning'], 1500);
 
-    if (reply === null || typeof value['isOnTrack'] !== 'boolean') {
+    if (prompt === null || buildsOnTitle === null || hint === null || reasoning === null) {
       return null;
     }
 
-    return { isOnTrack: value['isOnTrack'], reply };
+    if (kind === 'choice') {
+      const choices: IApiLessonChoice[] | null = ValidationHelper._parseChoices(raw['choices']);
+
+      return choices === null ? null : { kind, prompt, buildsOnTitle, choices, acceptedAnswers: [], hint, reasoning };
+    }
+
+    const acceptedAnswers: string[] | null = ValidationHelper._parseAcceptedAnswers(raw['acceptedAnswers']);
+
+    if (acceptedAnswers === null || prompt.split('___').length !== 2) {
+      return null;
+    }
+
+    return { kind, prompt, buildsOnTitle, choices: [], acceptedAnswers, hint, reasoning };
+  }
+
+  private static _parseChoices(raw: unknown): IApiLessonChoice[] | null {
+    if (!Array.isArray(raw) || raw.length < 3 || raw.length > 5) {
+      return null;
+    }
+
+    const choices: IApiLessonChoice[] = [];
+
+    for (const item of raw as unknown[]) {
+      if (!ValidationHelper.isRecord(item) || typeof item['isCorrect'] !== 'boolean') {
+        return null;
+      }
+
+      const text: string | null = ValidationHelper.text(item['text'], 300);
+      const feedback: string | null = ValidationHelper.text(item['feedback'], 500);
+
+      if (text === null || feedback === null) {
+        return null;
+      }
+
+      choices.push({ text, isCorrect: item['isCorrect'], feedback });
+    }
+
+    return choices.filter((choice: IApiLessonChoice) => choice.isCorrect).length === 1 ? choices : null;
+  }
+
+  private static _parseAcceptedAnswers(raw: unknown): string[] | null {
+    if (!Array.isArray(raw) || raw.length === 0 || raw.length > 10) {
+      return null;
+    }
+
+    const answers: string[] = [];
+
+    for (const item of raw as unknown[]) {
+      const answer: string | null = ValidationHelper.text(item, 60);
+
+      if (answer !== null) {
+        answers.push(answer);
+      }
+    }
+
+    return answers.length > 0 ? answers : null;
   }
 
   private static _parseConcepts(raw: unknown[]): IApiConcept[] {

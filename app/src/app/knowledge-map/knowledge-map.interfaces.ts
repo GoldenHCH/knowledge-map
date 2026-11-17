@@ -1,4 +1,4 @@
-import { MasteryLevel } from './knowledge-map.types';
+import { LessonQuestionKind, MasteryLevel } from './knowledge-map.types';
 
 export interface IConcept {
   id: string;
@@ -52,9 +52,18 @@ export interface ILearningPath {
   nextStep: IConcept | null;
 }
 
+export interface ILessonChoice {
+  text: string;
+  isCorrect: boolean;
+  feedback: string;
+}
+
 export interface ILessonQuestion {
-  question: string;
+  kind: LessonQuestionKind;
+  prompt: string;
   buildsOnTitle: string;
+  choices: ILessonChoice[];
+  acceptedAnswers: string[];
   hint: string;
   reasoning: string;
 }
@@ -74,19 +83,6 @@ export interface ILessonRequest {
   knownTitles: string[];
   shakyTitles: string[];
   missingTitles: string[];
-}
-
-export interface IReplyRequest {
-  conceptTitle: string;
-  question: string;
-  reasoning: string;
-  learnerAnswer: string;
-  knownTitles: string[];
-}
-
-export interface IAnswerReply {
-  isOnTrack: boolean;
-  reply: string;
 }
 
 export interface ITranscriptFinding {

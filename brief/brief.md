@@ -16,14 +16,14 @@ GapMap keeps a map of what you know, shows the exact gaps between you and any le
 
 ## 3. Judging rubric — everything follows from this
 
-No rubric was given. The judge reads the MD file and opens the live link, so we assume:
+The judge reads one Markdown file that pitches the product (`SUBMISSION.md`) and scores four criteria:
 
-| Criterion | Weight | How we win it |
-|-----------|--------|---------------|
-| Clear problem and pitch in the MD | High | README opens with the problem, the pitch, the live link and a three-step demo flow |
-| Live app works on first click | High | Ready-made maps and a sample learner, so the demo path never depends on a model call |
-| Product insight | Medium | The gap calculation is visible: "5 lessons, skipping 9 you already know" |
-| Polish | Medium | One screen, works on a phone, loading, empty and error states |
+| Criterion | What it asks | How we win it |
+|-----------|--------------|---------------|
+| Functionality | Does it work? | A live link, a one-click demo with a sample learner, and a fallback behind every model call |
+| Creativity | Is it novel? | The learner's knowledge is the unit: gap-only paths, lessons that ask instead of tell, and an MCP connector that carries the knowledge into Claude or ChatGPT |
+| Ambition | Did it aim high? | Any topic, three ways to import knowledge, a video lesson, an MCP server, a landing page with sign-up |
+| Technical difficulty | How hard was it? | Graph layout and gap logic from scratch, validated model output, a hand-written stateless MCP server |
 
 ## 4. Hard requirements
 
@@ -42,9 +42,10 @@ No rubric was given. The judge reads the MD file and opens the live link, so we 
 - See the goal as a prerequisite map, foundations at the top and the goal at the bottom
 - Mark each concept as known, shaky or new; saved in the browser
 - A learning path computed from the map: only the missing concepts, in an order where prerequisites come first, with a count of what is skipped
-- Open a lesson for a step as a guided dialogue: the tutor asks three or four questions, each one starting from a concept the learner already knows, so the learner reasons their way to the new idea instead of being told it
-- The learner types an answer and gets a short reply on their reasoning: what is right, and a nudge toward the next step without giving the answer away. A "hint" and a "show the reasoning" button for when they are stuck
-- The lesson ends with "what you just worked out", a summary built from the steps they reasoned through
+- Open a lesson for a step as a three-question quiz, multiple choice and fill-in-the-blank: each question starts from a concept the learner already knows, so the learner works their way to the new idea instead of being told it
+- Answers are checked instantly in code. A wrong choice explains why that mistake goes wrong; a wrong blank gives a hint, then the answer after two misses. "Hint" and "Show me" buttons for when they are stuck
+- An optional live tutor chat under each question, streaming its reply, for learners who want to talk it through
+- The lesson ends with "what you just worked out" and how many questions were right on the first try
 - A warning when a learner opens a concept whose prerequisites are missing, pointing to where to start instead
 - Mark a lesson as learned and watch the map and path update
 - "Load a sample learner" shortcut for judges
@@ -70,15 +71,15 @@ No rubric was given. The judge reads the MD file and opens the live link, so we 
 
 1. Open the live link and choose "Train a neural network from scratch". Click "Load a sample learner": the map fills with what they know and the path reads "6 lessons, skipping 9 you already know".
 2. Click "Backpropagation". The panel warns that two prerequisites are missing and points to "Chain rule" as the place to start.
-3. Open the "Chain rule" lesson. The tutor's first question starts from "Derivatives", which the learner knows: "If y changes 3 times as fast as u, and u changes 2 times as fast as x, how fast does y change with x?" Type an answer, get a reply on the reasoning, and reach the chain rule in three questions. Mark it as learned; the map turns green and the next step unlocks.
+3. Open the "Chain rule" lesson. The tutor's first question starts from "Derivatives", which the learner knows: "If y changes 3 times as fast as u, and u changes 2 times as fast as x, how fast does y change with x?" Pick an answer, read why a wrong option goes wrong, and reach the chain rule in three questions. Mark it as learned; the map turns green and the next step unlocks.
 
 ## 8. AI approach
 
 - **Topic → map** (unstructured in, structured out): a model turns a typed goal into a list of concepts with prerequisites. Code validates it, removes cycles and rejects bad output.
 - **Gap and path** are code, not a model: a walk over the prerequisite graph and a topological sort.
-- **Path step → question ladder** (structured in, unstructured out): one model call writes the whole lesson as three or four questions from the concept plus the lists of what the learner knows, is shaky on and has not learned. Each question names the known concept it starts from and carries a hint and the reasoning a good answer contains.
-- **Learner's answer → reply** (unstructured in, unstructured out): a second, small model call reads the typed answer against that reasoning and replies with what is right and a nudge. It never decides mastery; the learner does.
-- Every model path has a non-model equivalent: ready-made maps, a hand-written question ladder for the lessons on the demo path, and the stored reasoning shown in place of a reply if the model call fails.
+- **Path step → quiz** (structured in, structured out): one model call writes three questions from the concept plus the lists of what the learner knows, is shaky on and has not learned. Each question names the known concept it starts from and carries its options, a targeted explanation for every wrong option, a hint and a worked explanation. Code checks the answers.
+- **Learner's question → tutor reply** (unstructured in, unstructured out): the optional live chat streams a reply grounded in the concept, the current question and what the learner knows. It never decides mastery; the learner does.
+- Every model path has a non-model equivalent: ready-made maps, hand-written quizzes for the lessons on the demo path, and a quiz built from the map itself if the model call fails.
 - **Video** is made ahead of time, not by the app: ElevenLabs generates one video for a demo-path lesson and the file ships with the app.
 
 ## 9. Glossary

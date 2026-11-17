@@ -29,10 +29,10 @@ Time budget is about 42 minutes of building for phases 01 to 04, plus 10 for the
 ## Decisions
 
 - **Hosting: Vercel.** The Firebase CLI is not installed and no Firebase project exists; Vercel is installed and signed in. Angular front end in `app/`, serverless functions in `app/api/`.
-- **Model access: Vercel AI Gateway** from the serverless functions, so no API key sits in the repo or the browser. The team is on the gateway's free tier, which blocks Claude models, so lessons run on Gemini 2.5 Flash and maps on GPT-4o mini. `GAPMAP_LESSON_MODEL` and `GAPMAP_MAP_MODEL` switch them.
+- **Model access: Claude through the Anthropic SDK**, with `ANTHROPIC_API_KEY` set only in Vercel. Default model Claude Opus 5.5 at low effort; `GAPMAP_CLAUDE_MODEL` switches it. Without a key the functions fall back to Vercel AI Gateway (Gemini 2.5 Flash, GPT-4o mini), because the team's gateway plan blocks Claude models there.
 - **Sign-ups: Supabase**, project `gapmap`, one insert-only `signups` table.
 - **MCP: stateless**, with the learner's knowledge carried in the connector link as a snapshot, because there are no accounts.
-- **Lesson format: guided dialogue.** The tutor asks, the learner reasons. The whole question ladder comes from one model call so the lesson still works if later calls fail; only the reply to a typed answer is a live call.
+- **Lesson format: a three-question quiz**, multiple choice and fill-in-the-blank, generated in one model call and checked in code. A live, streaming tutor chat is the optional mode for learners who are stuck.
 - **Video: made ahead of time, one lesson only.** Phase 05 starts only after the live link works, and is the first thing dropped if the clock runs short.
 - **Storage: the browser's localStorage.** No Firestore, no accounts.
 - **Change detection: zone.js**, because `[ANG-03]` rules out signals and Angular 21 is zoneless by default.

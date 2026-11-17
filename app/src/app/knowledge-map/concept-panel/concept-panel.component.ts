@@ -2,9 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subscription } from 'rxjs';
 import { KnowledgeStoreService } from '../../core/services/knowledge-store.service';
@@ -12,7 +10,7 @@ import { TutorApiService } from '../../core/services/tutor-api.service';
 import { AlertBannerComponent } from '../../shared/components/alert-banner/alert-banner.component';
 import { GraphHelper } from '../graph.helper';
 import {
-  IAnswerReply,
+  ILessonChoice,
   IConcept,
   ILessonVideo,
   IKnowledgeMap,
@@ -21,7 +19,9 @@ import {
 } from '../knowledge-map.interfaces';
 import { MasteryByConceptKey, MasteryLevel } from '../knowledge-map.types';
 import { seededLessons } from '../lesson.constants';
+import { LessonHelper } from '../lesson.helper';
 import { lessonVideos } from '../media.constants';
+import { TutorChatComponent } from '../tutor-chat/tutor-chat.component';
 
 export interface IPrerequisiteRow {
   concept: IConcept;
@@ -33,12 +33,6 @@ export interface IMasteryChoice {
   label: string;
 }
 
-export interface IDialogueTurn {
-  role: 'tutor' | 'learner';
-  text: string;
-  tag?: string;
-  label?: string;
-}
 
 @Component({
   selector: 'app-concept-panel',
@@ -47,11 +41,10 @@ export interface IDialogueTurn {
     CommonModule,
     FormsModule,
     MatButtonModule,
-    MatFormFieldModule,
     MatIconModule,
-    MatInputModule,
     MatProgressSpinnerModule,
     AlertBannerComponent,
+    TutorChatComponent,
   ],
   templateUrl: './concept-panel.component.html',
   styleUrl: './concept-panel.component.scss',
@@ -74,22 +67,26 @@ export class ConceptPanelComponent implements OnInit, OnChanges, OnDestroy {
   public isLessonStarting: boolean = false;
   public lesson: ILesson | null = null;
   public questionIndex: number = 0;
-  public turns: IDialogueTurn[] = [];
-  public answerText: string = '';
-  public isSending: boolean = false;
+  public options: ILessonChoice[] = [];
+  public triedChoices: ILessonChoice[] = [];
+  public blankText: string = '';
+  public blankMisses: number = 0;
+  public isBlankShaking: boolean = false;
   public isHintShown: boolean = false;
-  public isReasoningShown: boolean = false;
   public isQuestionDone: boolean = false;
+  public isAnswerRevealed: boolean = false;
   public isLessonFinished: boolean = false;
+  public isChatOpen: boolean = false;
+  public firstTryCorrectCount: number = 0;
   public errorMessage: string = '';
   public prerequisitesMarkedNote: boolean = false;
 
   private readonly _store: KnowledgeStoreService = inject(KnowledgeStoreService);
   private readonly _api: TutorApiService = inject(TutorApiService);
   private _subscription: Subscription | null = null;
-  private static readonly _maxOffTrackAttempts: number = 2;
+  private static readonly _maxBlankMisses: number = 2;
   private _lessonToken: number = 0;
-  private _offTrackAttempts: number = 0;
+  private _isFirstTryLost: boolean = false;
 
   public ngOnInit(): void {
     this._subscription = this._store.mastery$.subscribe((mastery: MasteryByConceptKey) => {
@@ -162,14 +159,54 @@ export class ConceptPanelComponent implements OnInit, OnChanges, OnDestroy {
     return [...new Set<string>(this.lesson.questions.map((question: ILessonQuestion) => question.buildsOnTitle))];
   }
 
-  public get hasFallbackReply(): boolean {
-    const last: IDialogueTurn | undefined = this.turns[this.turns.length - 1];
-
-    return last !== undefined && last.label !== undefined;
+  public get canCheckBlank(): boolean {
+    return this.blankText.trim().length > 0 && !this.isQuestionDone;
   }
 
-  public get canSend(): boolean {
-    return this.answerText.trim().length > 0 && !this.isSending;
+  public get blankParts(): string[] {
+    const question: ILessonQuestion | null = this.currentQuestion;
+
+    return question ? question.prompt.split('___') : [];
+  }
+
+  public get blankFeedbackVisible(): boolean {
+    return this.blankMisses > 0 && !this.isQuestionDone;
+  }
+
+  public get acceptedAnswerText(): string {
+    const question: ILessonQuestion | null = this.currentQuestion;
+
+    return question && question.acceptedAnswers.length > 0 ? question.acceptedAnswers[0] : '';
+  }
+
+  public get chatContextNote(): string {
+    if (this.isLessonFinished && this.lesson) {
+      return this.lesson.takeaway;
+    }
+
+    return this.currentQuestion ? this.currentQuestion.prompt : '';
+  }
+
+  public get goalTitle(): string {
+    const goal: IConcept | undefined = this.map.concepts.find((item: IConcept) => item.id === this.goalConceptId);
+
+    return goal ? goal.title : this.concept.title;
+  }
+
+  public get knownTitles(): string[] {
+    return this._knownTitles();
+  }
+
+  public get shakyTitles(): string[] {
+    return this._titlesWithLevel('shaky').slice(0, 20);
+  }
+
+  public get scoreText(): string {
+    return `${this.firstTryCorrectCount} of ${this.questionCount} right on the first try`;
+  }
+
+  public get progressSteps(): number[] {
+    return Array.from({ length: this.questionCount }, (_: unknown, index: number) => index);
   }
 
   public onChooseMastery(level: MasteryLevel): void {
@@ -210,70 +247,76 @@ export class ConceptPanelComponent implements OnInit, OnChanges, OnDestroy {
     this._presentQuestion();
   }
 
-  public onToggleHint(): void {
+  public onShowHint(): void {
     this.isHintShown = true;
   }
 
-  public onShowReasoning(): void {
-    this.isReasoningShown = true;
-    this.isQuestionDone = true;
-  }
-
-  public async onCheckThinking(): Promise<void> {
-    const question: ILessonQuestion | null = this.currentQuestion;
-
-    if (!question || !this.canSend) {
+  public onShowMe(): void {
+    if (this.isQuestionDone && !this.isAnswerRevealed) {
       return;
     }
 
-    const token: number = this._lessonToken;
-    const answer: string = this.answerText.trim();
-    this.turns = [...this.turns, { role: 'learner', text: answer }];
-    this.answerText = '';
-    this.isSending = true;
+    this._loseFirstTry();
+    this.isAnswerRevealed = true;
+    this.isQuestionDone = true;
+  }
 
-    try {
-      const reply: IAnswerReply = await this._api.replyToAnswer({
-        conceptTitle: this.concept.title,
-        question: question.question,
-        reasoning: question.reasoning,
-        learnerAnswer: answer,
-        knownTitles: this._knownTitles(),
-      });
-
-      if (token !== this._lessonToken) {
-        return;
-      }
-
-      this.turns = [...this.turns, { role: 'tutor', text: reply.reply }];
-
-      if (!reply.isOnTrack) {
-        this._offTrackAttempts++;
-        this.isSending = false;
-
-        if (this._offTrackAttempts >= ConceptPanelComponent._maxOffTrackAttempts) {
-          this.turns = [
-            ...this.turns,
-            { role: 'tutor', text: question.reasoning, label: "Here's the line of thought:" },
-          ];
-          this.isReasoningShown = true;
-          this.isQuestionDone = true;
-        }
-
-        return;
-      }
-    } catch {
-      if (token !== this._lessonToken) {
-        return;
-      }
-
-      this.turns = [...this.turns, { role: 'tutor', text: question.reasoning, label: "Here's the line of thought:" }];
-      this.isReasoningShown = true;
+  public onPickChoice(choice: ILessonChoice): void {
+    if (this.isQuestionDone || this.triedChoices.includes(choice)) {
+      return;
     }
 
-    this.isSending = false;
-    this.isReasoningShown = true;
-    this.isQuestionDone = true;
+    this.triedChoices = [...this.triedChoices, choice];
+
+    if (choice.isCorrect) {
+      this.isQuestionDone = true;
+      this._scoreIfFirstTry();
+
+      return;
+    }
+
+    this._loseFirstTry();
+  }
+
+  public onCheckBlank(): void {
+    const question: ILessonQuestion | null = this.currentQuestion;
+
+    if (!question || !this.canCheckBlank) {
+      return;
+    }
+
+    if (LessonHelper.isBlankCorrect(question, this.blankText)) {
+      this.isQuestionDone = true;
+      this._scoreIfFirstTry();
+
+      return;
+    }
+
+    this._loseFirstTry();
+    this.blankMisses++;
+    this.isHintShown = true;
+    this._shakeBlank();
+
+    if (this.blankMisses >= ConceptPanelComponent._maxBlankMisses) {
+      this.isAnswerRevealed = true;
+      this.isQuestionDone = true;
+    }
+  }
+
+  public choiceState(choice: ILessonChoice): 'idle' | 'wrong' | 'correct' | 'locked' {
+    if (this.triedChoices.includes(choice)) {
+      return choice.isCorrect ? 'correct' : 'wrong';
+    }
+
+    return this.isQuestionDone ? 'locked' : 'idle';
+  }
+
+  public get isBlankSolved(): boolean {
+    return this.isQuestionDone && !this.isAnswerRevealed;
+  }
+
+  public onToggleChat(): void {
+    this.isChatOpen = !this.isChatOpen;
   }
 
   public onNextQuestion(): void {
@@ -305,32 +348,50 @@ export class ConceptPanelComponent implements OnInit, OnChanges, OnDestroy {
     this.isLessonStarting = false;
     this.lesson = null;
     this.questionIndex = 0;
-    this.turns = [];
-    this.answerText = '';
-    this.isSending = false;
-    this.isHintShown = false;
-    this.isReasoningShown = false;
-    this.isQuestionDone = false;
-    this._offTrackAttempts = 0;
     this.isLessonFinished = false;
+    this.isChatOpen = false;
+    this.firstTryCorrectCount = 0;
     this.errorMessage = '';
+    this._resetQuestionState();
+  }
+
+  private _resetQuestionState(): void {
+    this.options = [];
+    this.triedChoices = [];
+    this.blankText = '';
+    this.blankMisses = 0;
+    this.isBlankShaking = false;
+    this.isHintShown = false;
+    this.isQuestionDone = false;
+    this.isAnswerRevealed = false;
+    this._isFirstTryLost = false;
   }
 
   private _presentQuestion(): void {
     const question: ILessonQuestion | null = this.currentQuestion;
 
-    this.answerText = '';
-    this.isHintShown = false;
-    this.isReasoningShown = false;
-    this.isQuestionDone = false;
-    this._offTrackAttempts = 0;
+    this._resetQuestionState();
 
-    if (question) {
-      this.turns = [
-        ...this.turns,
-        { role: 'tutor', text: question.question, tag: `Starts from: ${question.buildsOnTitle}` },
-      ];
+    if (question && question.kind === 'choice') {
+      this.options = LessonHelper.shuffledChoices(question);
     }
+  }
+
+  private _loseFirstTry(): void {
+    this._isFirstTryLost = true;
+  }
+
+  private _scoreIfFirstTry(): void {
+    if (!this._isFirstTryLost) {
+      this.firstTryCorrectCount++;
+    }
+  }
+
+  private _shakeBlank(): void {
+    this.isBlankShaking = true;
+    setTimeout((): void => {
+      this.isBlankShaking = false;
+    }, 400);
   }
 
   private _knownTitles(): string[] {
@@ -366,48 +427,16 @@ export class ConceptPanelComponent implements OnInit, OnChanges, OnDestroy {
         missingTitles: this._titlesWithLevel('new').slice(0, 20),
       });
     } catch {
-      return seeded ?? this._buildLocalLesson(knownTitles);
+      return (
+        seeded ??
+        LessonHelper.localLesson(
+          this.map,
+          this.concept,
+          GraphHelper.allPrerequisitesOf(this.map, this.concept.id).filter(
+            (item: IConcept) => GraphHelper.masteryOf(item, this.mastery) === 'known',
+          ),
+        )
+      );
     }
-  }
-
-  private _buildLocalLesson(knownTitles: string[]): ILesson {
-    const prerequisites: string[] =
-      knownTitles.length > 0
-        ? knownTitles
-        : GraphHelper.prerequisitesOf(this.map, this.concept.id).map((item: IConcept) => item.title);
-    const anchors: string[] = prerequisites.length > 0 ? prerequisites : ['Everyday experience'];
-    const anchorAt: (index: number) => string = (index: number): string => anchors[index % anchors.length];
-    const summary: string = this.concept.summary;
-    const title: string = this.concept.title;
-
-    return {
-      conceptTitle: title,
-      isGenerated: false,
-      opening:
-        knownTitles.length > 0
-          ? `You already know ${knownTitles.join(', ')}. This lesson builds ${title} on top of that.`
-          : `Let's work out ${title} step by step, starting from what you already notice in everyday life.`,
-      questions: [
-        {
-          question: `In your own words, how might ${anchorAt(0)} lead to ${title}?`,
-          buildsOnTitle: anchorAt(0),
-          hint: `Think about what ${anchorAt(0)} lets you do that you could not do before.`,
-          reasoning: summary,
-        },
-        {
-          question: `Pick a small concrete example. Where would ${title} show up, and what part of ${anchorAt(1)} does it rely on?`,
-          buildsOnTitle: anchorAt(1),
-          hint: 'Use real numbers or a tiny scenario, and say what changes at each step.',
-          reasoning: summary,
-        },
-        {
-          question: `Now put it together: what does ${title} give you that ${anchorAt(2)} alone does not?`,
-          buildsOnTitle: anchorAt(2),
-          hint: 'Compare what you could answer before with what you can answer now.',
-          reasoning: summary,
-        },
-      ],
-      takeaway: summary,
-    };
   }
 }
